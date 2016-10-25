@@ -12,16 +12,7 @@ namespace LogFlow.Builtins.Outputs
 			Port = 9200;
 			IndexNameFormat = @"\l\o\g\f\l\o\w\-yyyyMM";
 			ConnectionLimit = 5;
-		    //MappingProperties = new Dictionary<PropertyNameMarker, IElasticType>
-		    //{
-		    //    {
-		    //        ElasticSearchFields.Source, new StringMapping() {Index = FieldIndexOption.NotAnalyzed}
-		    //    },
-		    //    {
-		    //        ElasticSearchFields.Timestamp, new DateMapping() {Format = "date_time", Index = NonStringIndexOption.NotAnalyzed}
-		    //    }
-		    //};
-		}
+        }
 
 		public string Host { get; set; }
 		public int Port { get; set; }

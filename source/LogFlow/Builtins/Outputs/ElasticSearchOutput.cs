@@ -54,7 +54,8 @@ namespace LogFlow.Builtins.Outputs
 
         private string BuildIndexName(DateTime timestamp)
         {
-            return timestamp.ToString(_configuration.IndexNameFormat);
+            var prefix = timestamp.ToString(_configuration.IndexNameFormat);
+            return prefix + Math.Floor(timestamp.Day / 6m);
         }
 
         private void EnsureIndexExists(string indexName)
@@ -78,6 +79,7 @@ namespace LogFlow.Builtins.Outputs
 
             };
 
+
             var result = _client.CreateIndex(createIndexRequest);
 
             CreateMappings(indexName);
@@ -92,20 +94,14 @@ namespace LogFlow.Builtins.Outputs
 
         private void CreateMappings(string indexName)
         {
-            //var indexDefinition = new RootObjectMapping
-            //{
-            //    Properties = _configuration.MappingProperties,
-            //    Name = indexName,
-            //    SourceFieldMappingDescriptor = new SourceFieldMapping() {Compress = true},
-            //    TtlFieldMappingDescriptor = new TtlFieldMapping() {Enabled = true, Default = _configuration.Ttl}
-            //};
+            var descriptor = new PutMappingDescriptor<IIsLog>(indexName, LogContext.LogType).AutoMap();
+            var result = _client.Map(descriptor);
 
-            //var result = _client.Map<object>(x => x.InitializeUsing(indexDefinition).Type("_default_"));
 
-            //if (!result.ConnectionStatus.Success)
-            //{
-            //    throw new ApplicationException(string.Format("Failed to update mapping for index: '{0}'. Result: '{1}'", indexName, result.ConnectionStatus.ResponseRaw));
-            //}
+            if (!result.Acknowledged)
+            {
+                throw new ApplicationException(string.Format("Failed to update mapping for index: '{0}'. Result: '{1}'", indexName, result.ServerError.Error.Reason));
+            }
         }
 
         public override Result Process(Result result)
@@ -149,6 +145,38 @@ namespace LogFlow.Builtins.Outputs
             }
             IndexLog(json, result.EventTimeStamp.Value, LogContext.LogType, lineId);
             return result;
+        }
+
+        public class IIsLog
+        {
+
+            [Ip(Name = "c-ip")]
+            public string CIP { get; set; }
+
+            [Ip(Name = "s-ip")]
+            public string SIP { get; set; }
+
+            [String(Name = "cs(Cookie)", Index = FieldIndexOption.NotAnalyzed)]
+            public string CsCookie { get; set; }
+
+            [String(Name = "cs(Referer)", Index = FieldIndexOption.NotAnalyzed)]
+            public string CsReferer { get; set; }
+
+            [String(Name = "cs(User-Agent)", Index = FieldIndexOption.NotAnalyzed)]
+            public string CsUserAgent { get; set; }
+
+            [String(Name = "cs-host", Index = FieldIndexOption.NotAnalyzed)]
+            public string CsHost { get; set; }
+
+            [String(Name = "cs-method", Index = FieldIndexOption.NotAnalyzed)]
+            public string CsMethod { get; set; }
+
+            [String(Name = "cs-uri-query", Index = FieldIndexOption.NotAnalyzed)]
+            public string CsUriQuery { get; set; }
+
+            [String(Name = "cs-uri-stem", Index = FieldIndexOption.NotAnalyzed)]
+            public string CsUriStem { get; set; }
+
         }
     }
 }
